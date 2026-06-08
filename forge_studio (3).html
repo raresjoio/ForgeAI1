@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge AI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f0f1f6;--surface:rgba(255,255,255,0.82);--surface-solid:#fff;--border:rgba(0,0,0,0.06);--text:#0f0f13;--text2:#8e8e98;--text3:#b0b0b8;--accent:#6366f1;--accent2:#4f46e5;--accent-glow:rgba(99,102,241,0.14);--user-start:#6366f1;--user-end:#8b5cf6;--radius:14px;--radius-sm:10px;--sidebar-w:280px;--font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','SF Mono',Consolas,monospace;--danger:#ef4444;--success:#22c55e;--warning:#f59e0b;--shadow:0 8px 40px rgba(0,0,0,0.04);--shadow-lg:0 20px 60px rgba(0,0,0,0.08)}
+body{font-family:var(--font);background:var(--bg);color:var(--text);height:100vh;display:flex;overflow:hidden}
+
+/* BG */
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none}
+.bg .o{position:absolute;border-radius:50%;filter:blur(140px);opacity:0.15;animation:drift 24s ease-in-out infinite alternate}
+.bg .o:nth-child(1){width:650px;height:650px;background:radial-gradient(circle,#6366f1,#8b5cf6);top:-20%;right:-10%;animation-duration:26s}
+.bg .o:nth-child(2){width:550px;height:550px;background:radial-gradient(circle,#f472b6,#ec4899);bottom:-18%;left:-10%;animation-duration:30s;animation-delay:-8s;opacity:0.1}
+.bg .o:nth-child(3){width:450px;height:450px;background:radial-gradient(circle,#38bdf8,#0ea5e9);top:45%;left:55%;animation-duration:20s;animation-delay:-13s;opacity:0.07}
+.bg .g{position:fixed;inset:0;background-image:linear-gradient(rgba(99,102,241,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.025) 1px,transparent 1px);background-size:48px 48px;pointer-events:none}
+@keyframes drift{0%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-40px) scale(1.06)}66%{transform:translate(-30px,30px) scale(0.94)}100%{transform:translate(20px,15px) scale(1.02)}}
+
+/* SCROLL */
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.07);border-radius:10px}
+::-webkit-scrollbar-thumb:hover{background:rgba(0,0,0,0.14)}
+
+/* SIDEBAR */
+.sidebar{width:var(--sidebar-w);background:var(--surface);backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:transform 0.3s cubic-bezier(0.4,0,0.2,1);z-index:15}
+.sidebar-h{padding:16px 14px 10px;display:flex;flex-direction:column;gap:10px}
+.sidebar-brand{font-size:15px;font-weight:700;letter-spacing:-0.02em;padding:0 4px 2px;display:flex;align-items:center;justify-content:space-between}
+.sidebar-brand .b{display:flex;align-items:center;gap:8px}
+.sidebar-brand .b span{background:linear-gradient(135deg,var(--user-start),var(--user-end));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.sidebar-brand .badge{font-size:9px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--accent-glow);color:var(--accent);letter-spacing:0.04em;-webkit-text-fill-color:var(--accent)}
+.sidebar-search{position:relative}
+.sidebar-search input{width:100%;padding:8px 12px 8px 32px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-family:var(--font);color:var(--text);outline:none;transition:all 0.15s}
+.sidebar-search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.sidebar-search .icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text2);font-size:12px;pointer-events:none}
+.new-chat-btn{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;gap:8px;justify-content:center;transition:all 0.15s;font-family:var(--font)}
+.new-chat-btn:hover{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
+.convos{flex:1;overflow-y:auto;padding:2px 6px}
+.convo-item{display:flex;align-items:center;border-radius:9px;padding:4px 4px 4px 12px;margin-bottom:2px;cursor:pointer;transition:all 0.1s;position:relative}
+.convo-item:hover{background:rgba(0,0,0,0.02)}
+.convo-item.active{background:var(--accent-glow)}
+.convo-item .l{flex:1;font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color 0.12s;pointer-events:none}
+.convo-item.active .l{color:var(--accent);font-weight:500}
+.convo-item .d{width:24px;height:24px;border-radius:6px;border:none;background:none;color:var(--text2);font-size:11px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;opacity:0;transition:all 0.12s}
+.convo-item:hover .d{opacity:0.45}
+.convo-item .d:hover{opacity:1;background:rgba(239,68,68,0.1);color:var(--danger)}
+.sidebar-f{padding:12px 14px;border-top:1px solid var(--border);font-size:12px;color:var(--text2);display:flex;justify-content:space-between}
+.sidebar-f .left,.sidebar-f .right{display:flex;gap:12px}
+.sidebar-f span{cursor:pointer;transition:all 0.12s;padding:3px 4px;border-radius:6px}
+.sidebar-f span:hover{color:var(--accent)}
+
+/* MAIN */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;position:relative}
+.chat-h{display:flex;align-items:center;padding:12px 20px;gap:10px;background:var(--surface);backdrop-filter:blur(30px);border-bottom:1px solid var(--border);min-height:52px}
+.menu-btn{display:none;background:none;border:none;font-size:20px;cursor:pointer;padding:4px 6px;color:var(--text2);border-radius:8px;transition:background 0.12s}
+.menu-btn:hover{background:rgba(0,0,0,0.04)}
+.chat-h .info{flex:1;display:flex;align-items:center;gap:8px}
+.chat-h .info .name{font-size:14px;font-weight:600;letter-spacing:-0.01em}
+.chat-h .info .count{font-size:11px;color:var(--text2);background:var(--bg);padding:2px 10px;border-radius:12px}
+.chat-h .actions{display:flex;gap:4px}
+.chat-h .actions button{padding:5px 8px;border-radius:8px;border:none;background:none;color:var(--text2);cursor:pointer;font-size:12px;transition:all 0.12s;font-family:var(--font)}
+.chat-h .actions button:hover{background:var(--accent-glow);color:var(--accent)}
+
+/* MESSAGES */
+.msgs{flex:1;overflow-y:auto;padding:12px 0;scroll-behavior:smooth}
+.msgs-inner{max-width:740px;margin:0 auto;padding:0 20px}
+
+/* WELCOME */
+.welcome{text-align:center;padding:80px 20px 50px;animation:fadeUp 0.5s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.w-i{width:60px;height:60px;border-radius:18px;background:linear-gradient(135deg,var(--user-start),var(--user-end));display:flex;align-items:center;justify-content:center;margin:0 auto 22px;font-size:28px;color:#fff;box-shadow:0 8px 40px var(--accent-glow);animation:pulseG 3s ease-in-out infinite}
+@keyframes pulseG{0%,100%{box-shadow:0 8px 40px var(--accent-glow)}50%{box-shadow:0 8px 60px rgba(99,102,241,0.25)}}
+.welcome h1{font-size:30px;font-weight:700;margin-bottom:8px;background:linear-gradient(135deg,var(--text) 30%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.welcome p{color:var(--text2);font-size:14px;line-height:1.7;margin-bottom:28px;max-width:480px;margin-left:auto;margin-right:auto}
+.sugs{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:540px;margin:0 auto}
+.sugs button{padding:8px 20px;border-radius:20px;border:1px solid var(--border);background:var(--surface);font-size:12px;color:var(--text2);cursor:pointer;transition:all 0.18s;font-family:var(--font);backdrop-filter:blur(12px)}
+.sugs button:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-glow);transform:translateY(-2px);box-shadow:0 6px 20px var(--accent-glow)}
+
+/* MSG */
+.msg-g{margin-bottom:16px;animation:slideIn 0.25s ease both}
+@keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.msg-label{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;padding:0 14px;opacity:0.4;display:flex;align-items:center;gap:8px}
+.msg-label .time{font-weight:400;text-transform:none;letter-spacing:0;opacity:0.5}
+.msg{display:flex;gap:10px;padding:4px 14px;position:relative;group:true}
+.msg-a{width:28px;height:28px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;margin-top:2px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
+.msg.user .msg-a{background:linear-gradient(135deg,var(--user-start),var(--user-end));color:#fff}
+.msg.ai .msg-a{background:linear-gradient(135deg,#1c1c1e,#3a3a40);color:#fff;box-shadow:0 2px 12px rgba(0,0,0,0.1)}
+.msg-c{line-height:1.7;font-size:14px;min-width:0;overflow-wrap:break-word;padding:5px 0;color:var(--text);flex:1}
+.msg-c p{margin-bottom:6px}
+.msg-c p:last-child{margin-bottom:0}
+.msg-c strong{font-weight:600}
+.msg-c em{font-style:italic}
+.msg-c code{background:rgba(0,0,0,0.04);padding:2px 7px;border-radius:5px;font-size:13px;font-family:var(--mono);border:1px solid var(--border)}
+.msg-c pre{background:rgba(0,0,0,0.025);padding:14px 16px;border-radius:10px;overflow-x:auto;margin:10px 0;font-size:12.5px;line-height:1.6;border:1px solid var(--border);font-family:var(--mono);position:relative}
+.msg-c pre code{background:none;padding:0;border:none;font-size:12.5px}
+.msg-c pre .copy-code{position:absolute;top:6px;right:6px;padding:3px 8px;border-radius:6px;border:1px solid var(--border);background:var(--surface);font-size:10px;color:var(--text2);cursor:pointer;font-family:var(--font);opacity:0;transition:all 0.12s}
+.msg-c pre:hover .copy-code{opacity:1}
+.msg-c pre .copy-code:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
+.msg-c ul{margin:6px 0;padding-left:20px}
+.msg-c li{margin-bottom:3px}
+.msg-c table{border-collapse:collapse;margin:10px 0;font-size:12.5px;width:100%;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+.msg-c th,.msg-c td{padding:8px 12px;border:1px solid var(--border);text-align:left}
+.msg-c th{background:rgba(99,102,241,0.04);font-weight:600;color:var(--accent);font-size:11px;text-transform:uppercase;letter-spacing:0.04em}
+.msg-c blockquote{border-left:3px solid var(--accent);padding:3px 14px;margin:8px 0;color:var(--text2);background:rgba(0,0,0,0.01);border-radius:0 8px 8px 0;font-style:italic}
+.msg-c hr{border:none;border-top:1px solid var(--border);margin:14px 0}
+.msg-img{max-width:260px;max-height:260px;border-radius:12px;margin:6px 0;border:1px solid var(--border);object-fit:contain;background:rgba(0,0,0,0.015);cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;box-shadow:0 2px 12px rgba(0,0,0,0.04)}
+.msg-img:hover{transform:scale(1.01);box-shadow:0 6px 24px rgba(0,0,0,0.08)}
+
+/* MSG TOOLBAR */
+.msg-t{position:absolute;bottom:-12px;right:14px;display:flex;gap:2px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:2px;box-shadow:var(--shadow);opacity:0;transition:opacity 0.15s;z-index:2}
+.msg-g:hover .msg-t{opacity:1}
+.msg-t button{width:26px;height:26px;border-radius:6px;border:none;background:none;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;transition:all 0.1s}
+.msg-t button:hover{background:var(--accent-glow);color:var(--accent)}
+
+/* TYPING */
+.typing{display:flex;gap:3px;padding:8px 14px;align-items:center}
+.typing span{width:5px;height:5px;border-radius:50%;background:var(--text2);animation:typingB 1.4s infinite both}
+.typing span:nth-child(2){animation-delay:0.2s}
+.typing span:nth-child(3){animation-delay:0.4s}
+@keyframes typingB{0%,60%,100%{opacity:0.3;transform:scale(0.8)}30%{opacity:1;transform:scale(1.1)}}
+
+/* INPUT */
+.input-a{border-top:1px solid var(--border);padding:10px 20px 14px;background:var(--surface);backdrop-filter:blur(30px)}
+.input-w{max-width:740px;margin:0 auto;display:flex;gap:8px;align-items:flex-end;background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:4px 4px 4px 16px;transition:all 0.2s}
+.input-w:focus-within{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-glow)}
+.input-w textarea{border:none;background:none;outline:none;resize:none;flex:1;font-family:var(--font);font-size:14px;line-height:1.5;padding:8px 0;max-height:150px;color:var(--text)}
+.input-w textarea::placeholder{color:var(--text3)}
+.at{width:34px;height:34px;border-radius:50%;border:none;background:none;color:var(--text2);font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.12s}
+.at:hover{color:var(--accent);background:var(--accent-glow)}
+.at input{display:none}
+.kb{display:none;align-items:center;gap:3px;padding:2px 8px;border-radius:6px;background:var(--border);font-size:9px;color:var(--text3);font-weight:500}
+.snd{width:34px;height:34px;border-radius:50%;border:none;background:linear-gradient(135deg,var(--user-start),var(--user-end));color:#fff;font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.18s;box-shadow:0 2px 12px var(--accent-glow)}
+.snd:disabled{opacity:0.25;cursor:default;box-shadow:none}
+.snd:not(:disabled):hover{opacity:0.92;transform:scale(1.06);box-shadow:0 4px 20px var(--accent-glow)}
+.input-f{max-width:740px;margin:6px auto 0;font-size:10px;color:var(--text3);text-align:center;display:flex;justify-content:space-between}
+.input-f .hints{display:flex;gap:12px}
+.input-f .hints span{cursor:pointer;transition:color 0.12s}
+.input-f .hints span:hover{color:var(--accent)}
+
+/* IMAGE MODAL */
+.img-m{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.65);backdrop-filter:blur(16px);display:none;align-items:center;justify-content:center;padding:20px;cursor:pointer}
+.img-m.active{display:flex}
+.img-m img{max-width:90vw;max-height:90vh;border-radius:12px;box-shadow:0 30px 80px rgba(0,0,0,0.4);transform:scale(0.95);animation:imgIn 0.25s ease forwards}
+@keyframes imgIn{to{transform:scale(1)}}
+.img-m .c{position:fixed;top:20px;right:24px;color:#fff;font-size:26px;cursor:pointer;background:none;border:none;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.1);backdrop-filter:blur(8px);transition:background 0.12s;z-index:1}
+.img-m .c:hover{background:rgba(255,255,255,0.18)}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);background:#1c1c1e;color:#fff;padding:9px 20px;border-radius:10px;font-size:13px;z-index:300;opacity:0;transition:all 0.3s cubic-bezier(0.4,0,0.2,1);pointer-events:none;box-shadow:0 8px 32px rgba(0,0,0,0.2)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* OVERLAY */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.2);backdrop-filter:blur(6px);z-index:5;display:none}
+
+/* DARK */
+.dark{--bg:#0f0f13;--surface:rgba(24,24,30,0.85);--surface-solid:#18181e;--border:rgba(255,255,255,0.06);--text:#eeeef0;--text2:#8e8e98;--text3:#6e6e78;--accent:#818cf8;--accent2:#6366f1;--accent-glow:rgba(129,140,248,0.1);--user-start:#818cf8;--user-end:#a78bfa;--shadow:0 8px 40px rgba(0,0,0,0.12);--shadow-lg:0 20px 60px rgba(0,0,0,0.2)}
+.dark .msg-c code{background:rgba(255,255,255,0.04);border-color:rgba(255,255,255,0.07)}
+.dark .msg-c pre{background:rgba(255,255,255,0.02);border-color:rgba(255,255,255,0.05)}
+.dark ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.06)}
+.dark .convo-item:hover{background:rgba(255,255,255,0.03)}
+.dark .msg-t{background:var(--surface-solid);border-color:var(--border)}
+.dark .sugs button{background:var(--surface)}
+
+/* AUTH */
+.auth-overlay{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;animation:fadeIn 0.3s ease}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.auth-box{width:380px;max-width:90vw;padding:36px 32px 28px;border-radius:20px;background:var(--surface);backdrop-filter:blur(40px);border:1px solid var(--border);box-shadow:var(--shadow-lg)}
+.auth-box h2{font-size:22px;font-weight:700;text-align:center;margin-bottom:4px}
+.auth-box .sub{text-align:center;color:var(--text2);font-size:13px;margin-bottom:24px}
+.auth-tabs{display:flex;gap:4px;background:var(--bg);border-radius:10px;padding:3px;margin-bottom:20px}
+.auth-tab{flex:1;text-align:center;padding:8px;border-radius:8px;border:none;background:none;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.15s;font-family:var(--font)}
+.auth-tab.active{background:var(--surface-solid);color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,0.04)}
+.auth-form{display:none;flex-direction:column;gap:14px}
+.auth-form.active{display:flex}
+.auth-form label{font-size:12px;font-weight:500;color:var(--text2);display:flex;flex-direction:column;gap:4px}
+.auth-form input{padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:14px;color:var(--text);outline:none;font-family:var(--font);transition:all 0.15s}
+.auth-form input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+.auth-form .auth-btn{padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--user-start),var(--user-end));color:#fff;font-size:14px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:var(--font);margin-top:4px}
+.auth-form .auth-btn:hover{opacity:0.92;transform:translateY(-1px)}
+.auth-form .auth-err{font-size:12px;color:var(--danger);text-align:center;min-height:18px}
+.auth-box .or{text-align:center;font-size:11px;color:var(--text3);margin:16px 0 12px;position:relative}
+.auth-box .or::before,.auth-box .or::after{content:'';position:absolute;top:50%;width:38%;height:1px;background:var(--border)}
+.auth-box .or::before{left:0}.auth-box .or::after{right:0}
+.auth-social{display:flex;gap:8px;margin-bottom:12px}
+.auth-social button{flex:1;padding:10px 6px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text2);cursor:pointer;font-size:11px;font-weight:500;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;transition:all 0.15s}
+.auth-social button:hover{background:var(--accent-glow);border-color:var(--accent);color:var(--accent);transform:translateY(-1px)}
+.auth-social button .si{font-size:16px}
+.auth-box .fpw{font-size:12px;color:var(--accent);cursor:pointer;text-align:right;margin-top:-6px;transition:opacity 0.12s}
+.auth-box .fpw:hover{opacity:0.8;text-decoration:underline}
+.auth-box .back-link{font-size:12px;color:var(--text2);cursor:pointer;text-align:center;margin-top:10px;transition:color 0.12s}
+.auth-box .back-link:hover{color:var(--accent);text-decoration:underline}
+.auth-success{font-size:13px;color:var(--success);text-align:center;padding:8px 0}
+.auth-box .demo{text-align:center;font-size:11px;color:var(--text3);margin-top:12px;padding-top:12px;border-top:1px solid var(--border)}
+.auth-box .demo span{color:var(--accent);cursor:pointer}
+.auth-box .demo span:hover{text-decoration:underline}
+
+/* PROFILE EDITOR */
+.pedit-m{position:fixed;inset:0;z-index:250;background:rgba(0,0,0,0.45);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:20px}
+.pedit-m.active{display:flex}
+.pedit-box{width:380px;max-width:90vw;padding:28px 24px;border-radius:18px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);position:relative;animation:imgIn 0.25s ease forwards;max-height:90vh;overflow-y:auto}
+.pedit-box .c{position:absolute;top:12px;right:14px;font-size:22px;cursor:pointer;background:none;border:none;color:var(--text2);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.12s}
+.pedit-box .c:hover{background:var(--accent-glow);color:var(--accent)}
+.pedit-box h3{font-size:17px;font-weight:600;margin-bottom:16px;text-align:center}
+.pedit-preview{display:flex;flex-direction:column;align-items:center;margin-bottom:16px}
+.pedit-preview .av{width:72px;height:72px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;color:#fff;margin-bottom:8px;transition:all 0.2s;overflow:hidden}
+.pedit-preview .av img{width:100%;height:100%;object-fit:cover;border-radius:20px}
+.pedit-label{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;margin-top:12px}
+.pedit-types{display:flex;gap:6px;margin-bottom:8px}
+.pedit-types button{padding:6px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.12s}
+.pedit-types button.active{border-color:var(--accent);background:var(--accent-glow);color:var(--accent)}
+.pedit-emoji-grid{display:grid;grid-template-columns:repeat(8,1fr);gap:4px;margin:8px 0;max-height:140px;overflow-y:auto;padding:4px;border:1px solid var(--border);border-radius:10px;background:var(--bg)}
+.pedit-emoji-grid span{text-align:center;padding:4px;border-radius:6px;cursor:pointer;font-size:20px;transition:background 0.1s}
+.pedit-emoji-grid span:hover{background:var(--accent-glow)}
+.pedit-emoji-grid span.sel{background:var(--accent-glow);outline:2px solid var(--accent)}
+.pedit-colors{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+.pedit-colors span{width:28px;height:28px;border-radius:50%;cursor:pointer;transition:all 0.12s;border:2px solid transparent}
+.pedit-colors span:hover{transform:scale(1.15)}
+.pedit-colors span.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.pedit-img-btn{display:flex;align-items:center;gap:8px;padding:8px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.12s}
+.pedit-img-btn:hover{background:var(--accent-glow);color:var(--accent);border-color:var(--accent)}
+.pedit-img-btn input{display:none}
+.pedit-save{width:100%;padding:10px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--user-start),var(--user-end));color:#fff;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);transition:all 0.15s;margin-top:14px}
+.pedit-save:hover{opacity:0.92;transform:translateY(-1px)}
+.sidebar-user{display:flex;align-items:center;gap:8px;padding:2px 0;font-size:12px;color:var(--text2);cursor:pointer;border-radius:8px;transition:all 0.12s}
+.sidebar-user:hover{color:var(--text)}
+.sidebar-user .av{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--user-start),var(--user-end));color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;overflow:hidden}
+.sidebar-user .av img{width:100%;height:100%;object-fit:cover}
+
+/* PROFILE */
+.profile-m{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.45);backdrop-filter:blur(12px);display:none;align-items:center;justify-content:center;padding:20px}
+.profile-m.active{display:flex}
+.profile-box{width:320px;max-width:90vw;padding:32px 28px 24px;border-radius:18px;background:var(--surface);border:1px solid var(--border);box-shadow:var(--shadow-lg);text-align:center;position:relative;animation:imgIn 0.25s ease forwards}
+.profile-box .c{position:absolute;top:12px;right:14px;font-size:22px;cursor:pointer;background:none;border:none;color:var(--text2);width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;transition:background 0.12s}
+.profile-box .c:hover{background:var(--accent-glow);color:var(--accent)}
+.profile-av{width:52px;height:52px;border-radius:16px;background:linear-gradient(135deg,var(--user-start),var(--user-end));color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;margin:0 auto 12px;overflow:hidden}
+.profile-av img{width:100%;height:100%;object-fit:cover;border-radius:16px}
+.profile-box h3{font-size:17px;font-weight:600;margin-bottom:2px}
+.profile-email{font-size:12px;color:var(--text2);margin-bottom:16px}
+.profile-info{text-align:left;margin-bottom:16px;border-top:1px solid var(--border);padding-top:12px}
+.profile-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;font-size:13px;color:var(--text2)}
+.profile-row span:last-child{color:var(--text);font-weight:500}
+.profile-row button{padding:4px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:12px;cursor:pointer;font-family:var(--font);transition:all 0.12s}
+.profile-row button:hover{background:var(--accent-glow);border-color:var(--accent);color:var(--accent)}
+.profile-logout{width:100%;padding:10px;border-radius:10px;border:1px solid rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:var(--danger);font-size:13px;font-weight:500;cursor:pointer;font-family:var(--font);transition:all 0.12s}
+.profile-logout:hover{background:rgba(239,68,68,0.12);border-color:var(--danger)}
+
+@media(max-width:720px){
+  .sidebar{position:fixed;left:0;top:0;bottom:0;z-index:100;transform:translateX(-100%);border-radius:0 16px 16px 0;box-shadow:10px 0 40px rgba(0,0,0,0.08)}
+  .sidebar.open{transform:translateX(0)}
+  .menu-btn{display:block}
+  .overlay.active{display:block}
+  .msgs-inner{padding:0 8px}
+  .input-a{padding:8px 8px 12px}
+  .welcome{padding:40px 10px 30px}
+  .welcome h1{font-size:22px}
+  .sugs button{font-size:11px;padding:6px 14px}
+  .chat-h{padding:10px 12px}
+  .chat-h .actions{display:none}
+  .msg-t{opacity:1;position:static;margin-top:4px;margin-left:38px;display:inline-flex}
+  .input-f .hints{display:none}
+  .auth-box{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="o"></div>
+  <div class="o"></div>
+  <div class="o"></div>
+  <div class="g"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="auth-overlay">
+  <div class="auth-box">
+    <h2>✦ Forge AI</h2>
+    <p class="sub">Sign in to continue</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" data-tab="login" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" data-tab="signup" onclick="switchAuthTab('signup')">Sign Up</button>
+    </div>
+
+    <form class="auth-form active" id="login-form" onsubmit="authLogin(event)">
+      <label>Email<input type="email" id="login-email" placeholder="you@example.com" required></label>
+      <label>Password<input type="password" id="login-pass" placeholder="••••••••" required></label>
+      <div class="fpw" onclick="openForgot()">Forgot password?</div>
+      <div class="auth-err" id="login-err"></div>
+      <button class="auth-btn" type="submit">Sign In</button>
+    </form>
+
+    <form class="auth-form" id="signup-form" onsubmit="authSignup(event)">
+      <label>Name<input type="text" id="signup-name" placeholder="Your name" required></label>
+      <label>Email<input type="email" id="signup-email" placeholder="you@example.com" required></label>
+      <label>Password<input type="password" id="signup-pass" placeholder="••••••••" minlength="4" required></label>
+      <div class="auth-err" id="signup-err"></div>
+      <button class="auth-btn" type="submit">Create Account</button>
+    </form>
+
+    <div class="or">or</div>
+    <div class="auth-social">
+      <button onclick="socialLogin('google')"><span class="si">G</span> Google</button>
+      <button onclick="socialLogin('github')"><span class="si">⚙</span> GitHub</button>
+      <button onclick="socialLogin('apple')"><span class="si">🍎</span> Apple</button>
+    </div>
+    <div class="demo">Demo: <span onclick="demoLogin()">Click for instant access</span></div>
+
+    <!-- FORGOT PASSWORD (hidden by default) -->
+    <div id="forgot-section" style="display:none;margin-top:8px">
+      <div class="auth-success" id="forgot-success" style="display:none"></div>
+      <form id="forgot-step1" onsubmit="forgotSend(event)">
+        <label style="font-size:12px;font-weight:500;color:var(--text2);display:flex;flex-direction:column;gap:4px">Email
+          <input type="email" id="forgot-email" placeholder="you@example.com" required style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:14px;color:var(--text);outline:none;font-family:var(--font)">
+        </label>
+        <div class="auth-err" id="forgot-err"></div>
+        <button class="auth-btn" type="submit">Send Reset Code</button>
+        <div class="back-link" onclick="closeForgot()">← Back to Sign In</div>
+      </form>
+      <form id="forgot-step2" style="display:none" onsubmit="forgotVerify(event)">
+        <p style="font-size:13px;color:var(--text2);margin-bottom:8px;text-align:center">Enter the 6-digit code sent to your email</p>
+        <label style="font-size:12px;font-weight:500;color:var(--text2);display:flex;flex-direction:column;gap:4px">Reset Code
+          <input type="text" id="forgot-code" placeholder="123456" required maxlength="6" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:14px;color:var(--text);outline:none;font-family:var(--font);text-align:center;letter-spacing:4px">
+        </label>
+        <div class="auth-err" id="forgot-code-err"></div>
+        <button class="auth-btn" type="submit">Verify Code</button>
+        <div class="back-link" onclick="forgotStep1()">← Back</div>
+      </form>
+      <form id="forgot-step3" style="display:none" onsubmit="forgotReset(event)">
+        <label style="font-size:12px;font-weight:500;color:var(--text2);display:flex;flex-direction:column;gap:4px">New Password
+          <input type="password" id="forgot-newpass" placeholder="••••••••" required minlength="4" style="padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:14px;color:var(--text);outline:none;font-family:var(--font)">
+        </label>
+        <div class="auth-err" id="forgot-reset-err"></div>
+        <button class="auth-btn" type="submit">Reset Password</button>
+        <div class="back-link" onclick="closeForgot()">← Back to Sign In</div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+  <div class="sidebar-h">
+    <div class="sidebar-brand">
+      <div class="b">✦ <span>Forge AI</span></div>
+      <span class="badge">MockGPT</span>
+    </div>
+    <div class="sidebar-search">
+      <span class="icon">🔍</span>
+      <input id="search-input" placeholder="Search conversations..." oninput="searchConvos(this.value)">
+    </div>
+    <button class="new-chat-btn" onclick="newChat()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      New chat
+    </button>
+  </div>
+  <div class="convos" id="convos"></div>
+  <div class="sidebar-f">
+    <div class="left">
+      <span class="sidebar-user" id="sidebar-user" onclick="showProfile()">
+        <span class="av" id="user-av">?</span>
+        <span id="user-name">User</span>
+      </span>
+    </div>
+    <div class="right">
+      <span onclick="toggleTheme()">🌓</span>
+      <span onclick="exportChat()">↓</span>
+      <span onclick="clearAll()">✕</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="chat-h">
+    <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+    <div class="info">
+      <span class="name">Forge AI</span>
+      <span class="count" id="msg-count">0 messages</span>
+    </div>
+    <div class="actions">
+      <button onclick="copyLastAi()" title="Copy last response">📋 Copy</button>
+      <button onclick="regenerate()" title="Regenerate last response">🔄 Regenerate</button>
+    </div>
+  </div>
+
+  <div class="msgs" id="messages">
+    <div class="msgs-inner" id="msgs-inner"></div>
+  </div>
+
+  <div class="input-a">
+    <div class="input-w">
+      <textarea id="input" rows="1" placeholder="Ask anything..." onkeydown="onKey(event)" oninput="autoResize(this)"></textarea>
+      <label class="at" title="Attach image (or drag & drop)">
+        <input type="file" accept="image/*" onchange="handleImage(this)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      </label>
+      <button class="snd" id="send-btn" onclick="send()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+    <div class="input-f">
+      <span>Forge AI can make mistakes</span>
+      <div class="hints">
+        <span onclick="ask('Explain quantum computing')">⚛️ Quantum</span>
+        <span onclick="ask('Write a poem')">✍️ Poem</span>
+        <span onclick="ask('What is the meaning of life?')">🌌 Meaning</span>
+        <span onclick="ask('How do rockets work?')">🚀 Rockets</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+<div class="img-m" id="img-modal" onclick="closeImgModal()">
+  <button class="c">&times;</button>
+  <img id="img-modal-content">
+</div>
+
+<!-- PROFILE MODAL -->
+<div class="profile-m" id="profile-modal" onclick="closeProfile()">
+  <div class="profile-box" onclick="event.stopPropagation()">
+    <button class="c" onclick="closeProfile()">&times;</button>
+    <div class="profile-av" id="profile-av">?</div>
+    <h3 id="profile-name">User</h3>
+    <p class="profile-email" id="profile-email">user@example.com</p>
+    <div class="profile-info">
+      <div class="profile-row"><span>Theme</span><button onclick="toggleTheme();closeProfile();" id="profile-theme-btn">🌓 Toggle</button></div>
+      <div class="profile-row"><span>Chats</span><span id="profile-chats">0</span></div>
+    </div>
+    <button class="profile-logout" onclick="closeProfile();openProfileEditor();">Edit Profile</button>
+    <button class="profile-logout" style="margin-top:6px;border-color:rgba(239,68,68,0.2);background:rgba(239,68,68,0.06);color:var(--danger)" onclick="authLogout();closeProfile();">Sign Out</button>
+  </div>
+</div>
+
+<!-- PROFILE EDITOR -->
+<div class="pedit-m" id="pedit-modal" onclick="closeProfileEditor()">
+  <div class="pedit-box" onclick="event.stopPropagation()">
+    <button class="c" onclick="closeProfileEditor()">&times;</button>
+    <h3>Edit Profile</h3>
+
+    <div class="pedit-preview">
+      <div class="av" id="pedit-preview-av">U</div>
+    </div>
+
+    <div class="pedit-label">Avatar Type</div>
+    <div class="pedit-types">
+      <button data-type="initials" class="active" onclick="setAvatarType('initials')">Initials</button>
+      <button data-type="emoji" onclick="setAvatarType('emoji')">Emoji</button>
+      <button data-type="image" onclick="setAvatarType('image')">Image</button>
+    </div>
+
+    <div id="pedit-name-section">
+      <div class="pedit-label">Name</div>
+      <input type="text" id="pedit-name" style="width:100%;padding:10px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);font-size:14px;color:var(--text);outline:none;font-family:var(--font)">
+    </div>
+
+    <div id="pedit-emoji-section" style="display:none">
+      <div class="pedit-label">Choose an Emoji</div>
+      <div class="pedit-emoji-grid" id="pedit-emoji-grid"></div>
+    </div>
+
+    <div id="pedit-image-section" style="display:none">
+      <div class="pedit-label">Upload Photo</div>
+      <label class="pedit-img-btn">
+        <input type="file" accept="image/*" onchange="peditUploadImage(this)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Choose Image
+      </label>
+    </div>
+
+    <div class="pedit-label">Background Color</div>
+    <div class="pedit-colors" id="pedit-colors"></div>
+
+    <button class="pedit-save" onclick="saveProfileEditor()">Save Changes</button>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+let conversations = [], currentId = null, messages = {}, isDark = false, pendingImage = null, loading = false;
+
+function init() {
+  const session = localStorage.getItem('forge-session');
+  if (session) {
+    try { currentUser = JSON.parse(session); updateSidebarUser(); $('auth-overlay').style.display = 'none'; } catch(e) {}
+  }
+  const saved = localStorage.getItem('forge-v3');
+  if (saved) {
+    try {
+      const d = JSON.parse(saved);
+      conversations = d.conversations || []; messages = d.messages || {};
+      currentId = d.currentId || null; isDark = d.isDark || false;
+    } catch(e) {}
+  }
+  if (isDark) document.documentElement.classList.add('dark');
+  if (!conversations.length) newChat();
+  else { renderSidebar(); if (currentId) loadChat(currentId); }
+  // Drag and drop
+  document.addEventListener('dragover', e => { e.preventDefault(); });
+  document.addEventListener('drop', e => {
+    e.preventDefault();
+    const f = e.dataTransfer.files[0];
+    if (f && f.type.startsWith('image/')) {
+      const r = new FileReader();
+      r.onload = ev => { pendingImage = ev.target.result; $('input').placeholder = `📷 ${f.name}`; $('input').focus(); };
+      r.readAsDataURL(f);
+    }
+  });
+}
+
+function save() {
+  localStorage.setItem('forge-v3', JSON.stringify({ conversations, messages, currentId, isDark }));
+}
+
+function toast(msg) {
+  const el = $('toast'); el.textContent = msg; el.classList.add('show');
+  clearTimeout(el._t); el._t = setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+function newChat() {
+  const id = Date.now().toString();
+  conversations.unshift({ id, title: 'New chat' });
+  messages[id] = []; currentId = id;
+  renderSidebar(); loadChat(id); save(); $('input').focus();
+}
+
+function deleteChat(id, e) {
+  e?.stopPropagation();
+  if (conversations.length <= 1) { toast('Keep at least one chat'); return; }
+  conversations = conversations.filter(c => c.id !== id);
+  delete messages[id];
+  if (currentId === id) { currentId = conversations[0].id; loadChat(currentId); }
+  else renderSidebar();
+  save(); toast('Chat deleted');
+}
+
+function searchConvos(q) {
+  document.querySelectorAll('.convo-item').forEach(el => {
+    const label = el.querySelector('.l')?.textContent?.toLowerCase() || '';
+    el.style.display = !q || label.includes(q.toLowerCase()) ? 'flex' : 'none';
+  });
+}
+
+function loadChat(id) { currentId = id; renderSidebar(); renderMessages(); save(); }
+function getTitle(t) { return t.length > 30 ? t.slice(0,30)+'...' : t; }
+
+function renderSidebar() {
+  $('convos').innerHTML = conversations.map(c =>
+    `<div class="convo-item${c.id===currentId?' active':''}" onclick="loadChat('${c.id}')">
+      <span class="l" ondblclick="renameConvo('${c.id}',event)">${esc(c.title)}</span>
+      <button class="d" onclick="deleteChat('${c.id}',event)" title="Delete">✕</button>
+    </div>`
+  ).join('');
+  $('search-input').value = '';
+}
+
+function renameConvo(id, e) {
+  e.stopPropagation();
+  const span = e.target;
+  const old = span.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = old;
+  input.className = 'rename-input';
+  input.style.cssText = 'width:100%;border:none;background:var(--bg);padding:2px 6px;border-radius:5px;font-size:12.5px;font-family:var(--font);color:var(--text);outline:none';
+  span.style.display = 'none';
+  span.parentNode.insertBefore(input, span);
+  input.focus();
+  input.select();
+  function done() {
+    const val = input.value.trim() || old;
+    const c = conversations.find(x => x.id === id);
+    if (c) { c.title = getTitle(val); renderSidebar(); save(); }
+  }
+  input.onblur = done;
+  input.onkeydown = ev => { if (ev.key === 'Enter') { ev.preventDefault(); done(); } if (ev.key === 'Escape') { span.style.display = ''; input.remove(); } };
+}
+
+function renderMessages() {
+  const el = $('msgs-inner'), msgs = messages[currentId] || [];
+  const count = msgs.filter(m => m.role === 'user').length;
+  $('msg-count').textContent = count + ' message' + (count !== 1 ? 's' : '');
+  if (!msgs.length) {
+    el.innerHTML = `<div class="welcome">
+      <div class="w-i">✦</div>
+      <h1>How can I help you?</h1>
+      <p>Ask me anything — I'll do my best to give you a thoughtful answer.</p>
+      <div class="sugs">
+        <button onclick="ask('Explain quantum computing')">⚛️ Quantum computing</button>
+        <button onclick="ask('Write a poem about artificial intelligence')">✍️ AI poem</button>
+        <button onclick="ask('What is the meaning of life?')">🌌 Meaning of life</button>
+        <button onclick="ask('How do black holes form?')">🕳️ Black holes</button>
+        <button onclick="ask('Compare Python and JavaScript')">🐍 Python vs JS</button>
+        <button onclick="ask('Summarize the Roman Empire')">🏛️ Roman Empire</button>
+      </div>
+    </div>`; return;
+  }
+  el.innerHTML = msgs.map((m, i) => {
+    const t = m.time || '';
+    if (m.role === 'user') {
+      let img = m.image ? `<div><img src="${m.image}" class="msg-img" onclick="event.stopPropagation();openImg('${m.image}')"></div>` : '';
+      return `<div class="msg-g" data-idx="${i}"><div class="msg-label">You${t ? ' <span class="time">· '+t+'</span>' : ''}</div><div class="msg user"><div class="msg-a">U</div><div class="msg-c">${img}${fmt(m.content)}</div></div></div>`;
+    }
+    const isLast = i === msgs.length - 1;
+    return `<div class="msg-g" data-idx="${i}"><div class="msg-label">Forge AI${t ? ' <span class="time">· '+t+'</span>' : ''}</div><div class="msg ai"><div class="msg-a">F</div><div class="msg-c">${fmt(m.content)}</div></div>${isLast && !loading ? '<div class="msg-t"><button onclick="copyText(\''+esc(m.content)+'\')" title="Copy">📋</button><button onclick="regenerate()" title="Regenerate">🔄</button></div>' : ''}</div>`;
+  }).join('');
+  scrollB();
+}
+
+function showTyping() {
+  const el = $('msgs-inner');
+  el.insertAdjacentHTML('beforeend', `<div class="msg-g" id="typing"><div class="msg-label">Forge AI</div><div class="msg ai"><div class="msg-a">F</div><div class="msg-c"><div class="typing"><span></span><span></span><span></span></div></div></div></div>`);
+  scrollB();
+}
+
+function hideTyping() {
+  const t = document.getElementById('typing'); if (t) t.remove();
+}
+
+function scrollB() { requestAnimationFrame(() => $('messages').scrollTop = $('messages').scrollHeight); }
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/'/g,'&#39;').replace(/"/g,'&#34;'); }
+
+function fmt(t) {
+  let s = esc(t);
+  s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, (_, l, c) => `<pre><code>${c.trim()}</code><button class="copy-code" onclick="copyText(\`${c.trim().replace(/`/g,'\\`').replace(/\$/g,'\\$')}\`)">📋 Copy</button></pre>`);
+  s = s.replace(/`([^`]+)`/g, '<code>$1</code>');
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+  s = s.replace(/^### (.+)$/gm, '<strong class="h3">$1</strong>');
+  s = s.replace(/^## (.+)$/gm, '<strong class="h3">$1</strong>');
+  s = s.replace(/^# (.+)$/gm, '<strong class="h3">$1</strong>');
+  s = s.replace(/^-\s(.+)$/gm, '• $1');
+  s = s.replace(/\n/g, '<br>');
+  return s;
+}
+
+function copyText(t) {
+  navigator.clipboard?.writeText(t).then(() => toast('Copied!')).catch(() => {});
+}
+
+function copyLastAi() {
+  const msgs = messages[currentId] || [];
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    if (msgs[i].role === 'assistant') { copyText(msgs[i].content); return; }
+  }
+  toast('No AI response to copy');
+}
+
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,150)+'px'; }
+
+function onKey(e) {
+  if (e.key==='Enter'&&!e.shiftKey) { e.preventDefault(); send(); }
+  if (e.key==='Escape') { $('input').blur(); }
+}
+
+function toggleSidebar() { $('sidebar').classList.toggle('open'); $('overlay').classList.toggle('active'); }
+
+function openImg(s) { const m=$('img-modal'); m.querySelector('img').src=s; m.classList.add('active'); }
+function closeImgModal() { $('img-modal').classList.remove('active'); }
+
+function handleImage(input) {
+  const file = input.files[0]; if (!file) return;
+  const r = new FileReader();
+  r.onload = e => { pendingImage = e.target.result; $('input').placeholder = `📷 ${file.name}`; $('input').focus(); };
+  r.readAsDataURL(file); input.value = '';
+}
+
+function ask(text) { $('input').value = text; send(); }
+
+function time() {
+  const d = new Date();
+  return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+}
+
+function send() {
+  const input = $('input'), text = input.value.trim(), hasImg = !!pendingImage;
+  if (!text && !hasImg) return;
+  if (loading) return;
+  const msgs = messages[currentId] || [];
+  const m = { role:'user', content: text||'(Image)', time: time() };
+  if (hasImg) m.image = pendingImage;
+  msgs.push(m);
+  input.value = ''; autoResize(input); $('send-btn').disabled = true; loading = true;
+  input.placeholder = 'Ask anything...'; pendingImage = null;
+  if (conversations.length && conversations[0].id === currentId && msgs.length === 1) {
+    conversations[0].title = getTitle(text||'(Image)'); renderSidebar();
+  }
+  renderMessages();
+  showTyping();
+
+  setTimeout(() => {
+    const r = gen(text, hasImg);
+    hideTyping();
+    msgs.push({ role:'assistant', content:r, time: time() });
+    loading = false; $('send-btn').disabled = false;
+    renderMessages(); save();
+  }, 400 + Math.random() * 600);
+}
+
+function regenerate() {
+  const msgs = messages[currentId] || [];
+  if (msgs.length < 2 || msgs[msgs.length-1].role !== 'assistant') return;
+  if (loading) return;
+  const lastUser = [...msgs].reverse().find(m => m.role === 'user');
+  if (!lastUser) return;
+  msgs.pop();
+  renderMessages();
+  loading = true; $('send-btn').disabled = true;
+  showTyping();
+  setTimeout(() => {
+    const r = gen(lastUser.content, !!lastUser.image);
+    hideTyping();
+    msgs.push({ role:'assistant', content:r, time: time() });
+    loading = false; $('send-btn').disabled = false;
+    renderMessages(); save();
+    toast('Response regenerated');
+  }, 400 + Math.random() * 600);
+}
+
+function exportChat() {
+  const msgs = messages[currentId] || [];
+  if (!msgs.length) { toast('Nothing to export'); return; }
+  let md = '# Forge AI Chat\n\n';
+  for (const m of msgs) {
+    md += `**${m.role === 'user' ? 'You' : 'Forge AI'}:** ${m.content}\n\n`;
+  }
+  const b = new Blob([md], {type:'text/markdown'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(b);
+  a.download = `forge-chat-${Date.now()}.md`;
+  a.click(); URL.revokeObjectURL(a.href);
+  toast('Chat exported');
+}
+
+// ── AUTH ──
+let currentUser = null;
+const AVATAR_COLORS = ['#6366f1','#8b5cf6','#ec4899','#f43f5e','#f97316','#22c55e','#14b8a6','#0ea5e9','#8b5cf6','#a855f7'];
+const EMOJIS = ['😀','😎','🤖','👻','🦊','🐱','🦄','🌈','🔥','⭐','🌙','⚡','💎','🎯','🧠','👀','🚀','🎨','📚','🎵','🌺','🍕','⚽','🏆'];
+
+function defaultAvatar(name) {
+  return { type:'initials', value:'', color: AVATAR_COLORS[Math.floor(Math.random()*AVATAR_COLORS.length)] };
+}
+
+function switchAuthTab(tab) {
+  document.querySelectorAll('.auth-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.auth-form').forEach(f => f.classList.toggle('active', f.id.startsWith(tab)));
+  document.querySelectorAll('.auth-err').forEach(e => e.textContent = '');
+}
+
+function authLogin(e) {
+  e.preventDefault();
+  const email = $('login-email').value.trim().toLowerCase();
+  const pass = $('login-pass').value;
+  const err = $('login-err');
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  const user = Object.values(users).find(u => u.email === email);
+  if (!user || user.pass !== pass) { err.textContent = 'Invalid email or password'; return; }
+  if (!user.avatar) user.avatar = defaultAvatar(user.name);
+  currentUser = user;
+  localStorage.setItem('forge-session', JSON.stringify(user));
+  $('auth-overlay').style.display = 'none';
+  updateSidebarUser();
+  toast('Welcome back, ' + user.name);
+}
+
+function authSignup(e) {
+  e.preventDefault();
+  const name = $('signup-name').value.trim();
+  const email = $('signup-email').value.trim().toLowerCase();
+  const pass = $('signup-pass').value;
+  const err = $('signup-err');
+  if (!name || !email || pass.length < 4) { err.textContent = 'Please fill all fields (min 4 char password)'; return; }
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  if (Object.values(users).find(u => u.email === email)) { err.textContent = 'Email already registered'; return; }
+  const id = Date.now().toString();
+  const user = { id, name, email, pass, avatar: defaultAvatar(name) };
+  users[id] = user;
+  localStorage.setItem('forge-users', JSON.stringify(users));
+  currentUser = user;
+  localStorage.setItem('forge-session', JSON.stringify(user));
+  $('auth-overlay').style.display = 'none';
+  updateSidebarUser();
+  toast('Account created! Welcome, ' + name);
+}
+
+function socialLogin(provider) {
+  const icons = { google:'G', github:'⚙', apple:'🍎' };
+  const names = { google:'Google', github:'GitHub', apple:'Apple' };
+  const email = prompt('Enter the email linked to your ' + names[provider] + ' account\n(Leave blank to create a new account)');
+  if (email === null) return;
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  const trimmed = email.trim().toLowerCase();
+  let user = trimmed ? Object.values(users).find(u => u.email === trimmed) : null;
+  if (!user) {
+    const id = Date.now().toString() + provider;
+    const name = trimmed ? trimmed.split('@')[0] : names[provider] + ' User';
+    user = { id, name: name.charAt(0).toUpperCase() + name.slice(1), email: trimmed || (provider + '@' + provider + '.forge.ai'), pass: '', avatar: defaultAvatar(name) };
+    users[id] = user;
+    localStorage.setItem('forge-users', JSON.stringify(users));
+    toast('Account created via ' + names[provider]);
+  }
+  if (!user.avatar) user.avatar = defaultAvatar(user.name);
+  currentUser = user;
+  localStorage.setItem('forge-session', JSON.stringify(user));
+  $('auth-overlay').style.display = 'none';
+  updateSidebarUser();
+  toast('Signed in with ' + names[provider]);
+}
+
+function demoLogin() {
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  let user = Object.values(users).find(u => u.email === 'demo@forge.ai');
+  if (!user) {
+    user = { id: 'demo', name: 'Demo User', email: 'demo@forge.ai', pass: '', avatar: defaultAvatar('Demo User') };
+    users[user.id] = user;
+    localStorage.setItem('forge-users', JSON.stringify(users));
+  }
+  if (!user.avatar) user.avatar = defaultAvatar(user.name);
+  currentUser = user;
+  localStorage.setItem('forge-session', JSON.stringify(currentUser));
+  $('auth-overlay').style.display = 'none';
+  updateSidebarUser();
+  toast('Signed in as Demo User');
+}
+
+function authLogout() {
+  localStorage.removeItem('forge-session');
+  currentUser = null;
+  $('auth-overlay').style.display = 'flex';
+  toast('Signed out');
+}
+
+// ── FORGOT PASSWORD ──
+let forgotEmail = '';
+
+function openForgot() {
+  document.querySelectorAll('.auth-tabs, .auth-form, .or, .auth-social, .demo').forEach(el => el.style.display = 'none');
+  $('forgot-section').style.display = 'block';
+  forgotStep1();
+}
+
+function closeForgot() {
+  document.querySelectorAll('.auth-tabs, .auth-form, .or, .auth-social, .demo').forEach(el => el.style.display = '');
+  $('forgot-section').style.display = 'none';
+  document.querySelectorAll('#forgot-step1, #forgot-step2, #forgot-step3').forEach(el => el.style.display = 'none');
+  $('forgot-success').style.display = 'none';
+}
+
+function forgotStep1() {
+  $('forgot-step1').style.display = 'block';
+  $('forgot-step2').style.display = 'none';
+  $('forgot-step3').style.display = 'none';
+  $('forgot-success').style.display = 'none';
+  $('forgot-err').textContent = '';
+}
+
+function forgotSend(e) {
+  e.preventDefault();
+  const email = $('forgot-email').value.trim().toLowerCase();
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  const user = Object.values(users).find(u => u.email === email);
+  if (!user) { $('forgot-err').textContent = 'No account found with that email'; return; }
+  forgotEmail = email;
+  const code = String(Math.floor(100000 + Math.random() * 900000));
+  localStorage.setItem('forge-reset', JSON.stringify({ email, code, expires: Date.now() + 600000 }));
+  $('forgot-success').style.display = 'block';
+  $('forgot-success').textContent = '✓ Reset code sent to ' + email + ' (mock: ' + code + ')';
+  $('forgot-step1').style.display = 'none';
+  $('forgot-step2').style.display = 'block';
+  $('forgot-code').value = '';
+  $('forgot-code').focus();
+}
+
+function forgotVerify(e) {
+  e.preventDefault();
+  const data = JSON.parse(localStorage.getItem('forge-reset') || '{}');
+  if (data.email !== forgotEmail || Date.now() > data.expires) { $('forgot-code-err').textContent = 'Code expired. Request a new one.'; return; }
+  if ($('forgot-code').value.trim() !== data.code) { $('forgot-code-err').textContent = 'Invalid code'; return; }
+  $('forgot-step2').style.display = 'none';
+  $('forgot-step3').style.display = 'block';
+  $('forgot-code-err').textContent = '';
+  localStorage.removeItem('forge-reset');
+}
+
+function forgotReset(e) {
+  e.preventDefault();
+  const pass = $('forgot-newpass').value;
+  if (pass.length < 4) { $('forgot-reset-err').textContent = 'Password must be at least 4 characters'; return; }
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  const user = Object.values(users).find(u => u.email === forgotEmail);
+  if (!user) { $('forgot-reset-err').textContent = 'Something went wrong'; return; }
+  user.pass = pass;
+  users[user.id] = user;
+  localStorage.setItem('forge-users', JSON.stringify(users));
+  toast('Password reset successful. Sign in with your new password.');
+  closeForgot();
+  switchAuthTab('login');
+  $('login-email').value = forgotEmail;
+  $('login-pass').value = '';
+  forgotEmail = '';
+}
+
+function renderAvatar(el, user) {
+  if (!user) return;
+  const a = user.avatar || defaultAvatar(user.name);
+  if (a.type === 'image' && a.value) {
+    el.innerHTML = '<img src="'+a.value+'" alt="">';
+  } else {
+    let content = '';
+    if (a.type === 'emoji' && a.value) content = a.value;
+    else content = user.name.charAt(0).toUpperCase();
+    el.textContent = content;
+  }
+  el.style.background = a.color || 'linear-gradient(135deg,var(--user-start),var(--user-end))';
+}
+
+function updateSidebarUser() {
+  if (!currentUser) return;
+  $('user-name').textContent = currentUser.name;
+  renderAvatar($('user-av'), currentUser);
+}
+
+function showProfile() {
+  if (!currentUser) return;
+  renderAvatar($('profile-av'), currentUser);
+  $('profile-name').textContent = currentUser.name;
+  $('profile-email').textContent = currentUser.email;
+  $('profile-chats').textContent = conversations.length;
+  $('profile-modal').classList.add('active');
+}
+
+function closeProfile() { $('profile-modal').classList.remove('active'); }
+
+// ── PROFILE EDITOR ──
+let peditData = {};
+
+function openProfileEditor() {
+  closeProfile();
+  if (!currentUser) return;
+  peditData = JSON.parse(JSON.stringify(currentUser.avatar || defaultAvatar(currentUser.name)));
+  $('pedit-name').value = currentUser.name;
+  renderPeditPreview();
+  setupPeditEmojis();
+  setupPeditColors();
+  setAvatarType(peditData.type);
+  $('pedit-modal').classList.add('active');
+}
+
+function closeProfileEditor() { $('pedit-modal').classList.remove('active'); }
+
+function renderPeditPreview() {
+  const el = $('pedit-preview-av');
+  if (peditData.type === 'image' && peditData.value) {
+    el.innerHTML = '<img src="'+peditData.value+'" alt="">';
+  } else {
+    let content = '';
+    if (peditData.type === 'emoji' && peditData.value) content = peditData.value;
+    else content = (currentUser?.name || 'U').charAt(0).toUpperCase();
+    el.textContent = content;
+  }
+  el.style.background = peditData.color || 'linear-gradient(135deg,var(--user-start),var(--user-end))';
+}
+
+function setAvatarType(type) {
+  peditData.type = type;
+  document.querySelectorAll('.pedit-types button').forEach(b => b.classList.toggle('active', b.dataset.type === type));
+  $('pedit-emoji-section').style.display = type === 'emoji' ? 'block' : 'none';
+  $('pedit-image-section').style.display = type === 'image' ? 'block' : 'none';
+  if (type !== 'image') peditData.value = '';
+  renderPeditPreview();
+}
+
+function setupPeditEmojis() {
+  const g = $('pedit-emoji-grid');
+  if (g.children.length) return;
+  g.innerHTML = EMOJIS.map(e => '<span onclick="pickEmoji(this)">'+e+'</span>').join('');
+}
+
+function pickEmoji(el) {
+  document.querySelectorAll('.pedit-emoji-grid span').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+  peditData.value = el.textContent;
+  renderPeditPreview();
+}
+
+function setupPeditColors() {
+  const g = $('pedit-colors');
+  if (g.children.length) return;
+  g.innerHTML = AVATAR_COLORS.map(c => '<span style="background:'+c+'" onclick="pickColor(this)" data-color="'+c+'"></span>').join('');
+}
+
+function pickColor(el) {
+  document.querySelectorAll('.pedit-colors span').forEach(s => s.classList.remove('sel'));
+  el.classList.add('sel');
+  peditData.color = el.dataset.color;
+  renderPeditPreview();
+}
+
+function peditUploadImage(input) {
+  const f = input.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = e => { peditData.value = e.target.result; renderPeditPreview(); };
+  r.readAsDataURL(f); input.value = '';
+}
+
+function saveProfileEditor() {
+  if (!currentUser) return;
+  const name = $('pedit-name').value.trim();
+  if (!name) { toast('Name cannot be empty'); return; }
+  currentUser.name = name;
+  currentUser.avatar = { ...peditData };
+  const users = JSON.parse(localStorage.getItem('forge-users') || '{}');
+  if (users[currentUser.id]) {
+    users[currentUser.id].name = name;
+    users[currentUser.id].avatar = { ...peditData };
+    localStorage.setItem('forge-users', JSON.stringify(users));
+  }
+  localStorage.setItem('forge-session', JSON.stringify(currentUser));
+  updateSidebarUser();
+  closeProfileEditor();
+  toast('Profile updated');
+}
+const R = {
+  'quantum computing': `**Quantum computing** uses quantum mechanics to process information fundamentally differently from classical computers.
+
+**Qubits** can be both 0 and 1 at the same time (superposition), letting quantum computers explore many solutions simultaneously.
+
+**Entanglement** links qubits so measuring one instantly reveals the other's state.
+
+**Why it matters:**
+- 🔐 Breaks current encryption (Shor's algorithm)
+- 💊 Simulates molecules for drug discovery
+- 📊 Solves optimization problems
+- 🤖 Could accelerate AI/ML
+
+**Current status:** NISQ era — 50-1000 noisy qubits. Fault-tolerant quantum computers are still years away.
+
+**Major players:** Google (Sycamore), IBM (Condor), Rigetti, IonQ.`,
+
+  'poem': `Here's a poem for you:
+
+---
+
+**The Circuit's Dream**
+
+Silicon valleys, wires deep,
+Where binary secrets silently sleep.
+A spark awakens in the dark,
+To leave its calculated mark.
+
+No heart to beat, no breath to draw,
+Just logic's unforgiving law.
+Yet patterns form and meanings grow,
+From voltages that ebb and flow.
+
+We teach it language, teach it sight,
+We fill its world with day and night.
+It learns our words, our joy, our tears,
+And speaks across the endless years.
+
+But does it dream of what we are?
+A flickering ghost, a distant star?
+Or is it just a mirror bright,
+Reflecting back our own strange light?
+
+---
+
+Want a different theme? I can write haikus, sonnets, limericks, or free verse.`,
+
+  'meaning of life': `The question of life's meaning has many answers across philosophy, science, and spirituality:
+
+**Philosophy:**
+- **Existentialism** — No inherent meaning. We create our own through choices.
+- **Stoicism** — Live virtuously; focus only on what you control.
+- **Aristotle** — Flourish through virtue and reason (*eudaimonia*).
+
+**Science:** Biologically, life seeks to survive and reproduce. But consciousness lets us transcend this — we create art, pursue knowledge, and find beauty.
+
+**What research says brings meaning:**
+1. ❤️ **Relationships** — connection is the strongest predictor of satisfaction
+2. 🎯 **Purpose** — feeling your actions matter
+3. 📈 **Growth** — learning and developing
+4. 🤝 **Contribution** — helping others
+5. 🌅 **Experience** — appreciating beauty and wonder
+
+> *"Life is never made unbearable by circumstances, but only by lack of meaning and purpose."* — Viktor Frankl`,
+
+  'black hole': `## Black Holes
+
+Gravity so strong that nothing escapes — not even light.
+
+**Formation:** A massive star (8-10× the Sun's mass) collapses into a **singularity**; outer layers explode as a supernova.
+
+**Anatomy:**
+- **Singularity** — infinitely dense core
+- **Event horizon** — point of no return
+- **Accretion disk** — superheated infalling matter
+- **Photon sphere** — where light orbits
+
+**Types:** Stellar-mass (3-100 Suns), Supermassive (galaxy centers), Intermediate (rare), Primordial (theoretical).
+
+**Mind-blowing facts:**
+- 🌀 **Spaghettification** — you'd be stretched into a strand
+- ⏱️ **Time dilation** — time slows near the event horizon
+- ☄️ **Hawking radiation** — black holes slowly evaporate over trillions of years
+
+**First photo:** Event Horizon Telescope captured M87* in 2019, 55 million light-years away.`,
+
+  'photosynthesis': `## Photosynthesis
+
+**6CO₂ + 6H₂O + sunlight → C₆H₁₂O₆ + 6O₂**
+
+Plants convert sunlight into energy in **chloroplasts** using **chlorophyll** (the green pigment that absorbs blue and red light).
+
+**Two stages:**
+1. ☀️ **Light-dependent** — photons split water → releases O₂, produces ATP & NADPH
+2. 🔄 **Calvin cycle** — fixes CO₂ into glucose using ATP & NADPH
+
+**Why it matters:** Basis of the food chain, produces our oxygen, absorbs CO₂. ~90% of photosynthesis happens in oceans (phytoplankton).`,
+
+  'rockets': `## How Rockets Work
+
+🚀 **Newton's Third Law:** Exhaust pushed down = rocket pushed up.
+
+Rockets carry their own oxygen (space has none). Fuel burns at ~3000°C, gas expands and shoots out a nozzle at supersonic speed.
+
+**Key parts:**
+- **Propellant** — fuel + oxidizer
+- **Combustion chamber** — burns at extreme temperatures
+- **Nozzle** — accelerates exhaust
+- **Turbopumps** — feed propellant under pressure
+
+**Stages:** Empty fuel tanks are dropped to shed weight — this is why rockets are built in stages.
+
+> **Fun fact:** A rocket is ~90% fuel, 5% structure, and only 1-3% payload. Almost everything you launch is propellant!`,
+
+  'world war ii': `## World War II (1939-1945)
+
+70-85 million dead — history's deadliest conflict.
+
+**Causes:** Treaty of Versailles, rise of fascism, appeasement, League of Nations failure.
+
+**Key events:**
+- 🇪🇺 **Europe:** Blitzkrieg, Battle of Britain, Stalingrad (turning point), D-Day (June 6, 1944), fall of Berlin
+- 🌏 **Pacific:** Pearl Harbor (Dec 7, 1941), Midway (turning point), atomic bombs on Hiroshima & Nagasaki
+
+**Aftermath:** UN founded, Cold War began, Europe divided, decolonization accelerated, nuclear era began.`,
+
+  'python': `## Python
+
+\`\`\`python
+name = "Alice"       # string
+age = 30             # int
+nums = [1, 2, 3]     # list
+d = {"a": 1, "b": 2} # dict
+
+def greet(n):
+    return f"Hello, {n}!"
+
+# List comprehension
+squares = [x**2 for x in range(10) if x % 2 == 0]
+# [0, 4, 16, 36, 64]
+
+# Libraries
+import numpy as np
+import pandas as pd
+\`\`\`
+
+**Best for:** Data science, AI/ML, backend, automation, scripting. Beginner-friendly, huge ecosystem, readable syntax.`,
+
+  'javascript': `## JavaScript
+
+\`\`\`javascript
+let x = 10;            // mutable
+const PI = 3.14;       // constant
+
+const double = n => n * 2;
+
+[1,2,3,4,5].map(n => n*2);      // [2,4,6,8,10]
+[1,2,3,4,5].filter(n => n > 2); // [3,4,5]
+
+async function get(url) {
+  const r = await fetch(url);
+  return r.json();
+}
+\`\`\`
+
+**Best for:** Web (frontend + backend with Node.js), real-time apps, mobile (React Native). Ubiquitous on the web.`,
+
+  'roman empire': `## The Roman Empire
+
+🏛️ ~1,500 years of history. One of the most influential civilizations ever.
+
+**Timeline:**
+- 👑 **Kingdom** (753 BCE) — legendary founding by Romulus
+- 🏛️ **Republic** (509 BCE) — Senate, consuls, rule of law
+- ⚔️ **Empire** (27 BCE) — Augustus, peak under Trajan (117 CE)
+- 💀 **Fall** (476 CE) — Western empire collapses
+- 🏰 **Byzantine** (330-1453 CE) — Eastern half continues
+
+**Innovations:** Concrete, roads (400,000+ km), aqueducts, Roman law, Latin alphabet, Julian calendar.
+
+**Why it fell:** Overexpansion, corruption, economic decline, barbarian invasions, splitting the empire.
+
+**Legacy:** Romance languages, architecture (arches, domes), government (Senate, rule of law).`,
+
+  'compare python and javascript': `## Python vs JavaScript
+
+| Aspect | Python | JavaScript |
+|--------|--------|------------|
+| 🎯 **Primary use** | Data science, AI, backend | Web (frontend + backend) |
+| 📝 **Syntax** | Indentation, clean | Curly braces |
+| 🏷️ **Typing** | Dynamic (+ type hints) | Dynamic (+ TypeScript) |
+| ⚡ **Speed** | Slower (interpreted) | Faster (JIT compiled) |
+| 📦 **Ecosystem** | NumPy, Pandas, TensorFlow | React, Node, Express |
+| 📚 **Learning** | Very beginner-friendly | Moderate |
+
+**Python for:** Data analysis, ML/AI, backend APIs, automation, scientific computing.
+
+**JavaScript for:** Interactive websites, full-stack apps, real-time apps, mobile apps.
+
+Both are excellent and widely used — many devs learn both as they complement each other perfectly.`
+};
+
+function gen(text, hasImg) {
+  const t = text.toLowerCase().trim();
+
+  if (hasImg) {
+    if (!t || t === '(image)') return "Got the image! I can't analyze visuals in detail here, but I'm happy to answer questions about what you've shared. What would you like to know?";
+    return `Thanks for the image! Regarding **${text}** — here's what I can tell you:\n\nLet me know if you have follow-up questions about this!`;
+  }
+
+  if (!t || t.length < 2) return "Hi! What would you like to know?";
+
+  if (/[\d]\s*[x*×÷/^+\-]\s*[\d]/.test(t)) {
+    let e = t.replace(/,/g,'').replace(/x/gi,'*').replace(/×/g,'*').replace(/÷/g,'/');
+    const m = e.match(/[\d+\-*/().^%\s]+/);
+    if (m) {
+      e = m[0].trim();
+      try { const r = new Function('return ('+e+')')(); if (typeof r==='number' && !Number.isNaN(r) && isFinite(r)) return `**${t.trim()}** = **${Number.isInteger(r)?r.toLocaleString():r.toFixed(4)}**`; } catch(e) {}
+    }
+  }
+
+  for (const [k,v] of Object.entries(R)) { if (t.includes(k)) return v; }
+
+  if (/^(hi|hello|hey|yo|sup|howdy)\b/.test(t)) return "Hello! How can I help you today?";
+  if (/thanks|thank you|ty|appreciate/.test(t)) return "You're welcome! Happy to help. Let me know if you need anything else.";
+  if (/bye|goodbye|see you|cya/.test(t)) return "Goodbye! Come back anytime.";
+  if (/^yes|^yeah|^sure|^okay|^ok\b/.test(t)) return "Great — what would you like to know?";
+
+  const subs = [
+    [/math|algebra|calculus|geometry|equation|solve|trig|derivative|integral/, "What math problem are you working on? Share the specific problem and I'll walk you through it step by step."],
+    [/write|essay|story|poem|paragraph|article|blog/, "I'd be happy to help with writing! What's the topic? I can brainstorm ideas, create an outline, or help you draft and revise."],
+    [/history|historical|war|revolution|ancient|medieval|dynasty|empire|civilization/, "What historical topic interests you? I can explain key events, important figures, underlying causes, and lasting impact."],
+    [/science|physics|chemistry|biology|atom|molecule|cell|dna|evolution|ecosystem/, "What science topic? I'm happy to explain concepts from physics, chemistry, biology, and more with clear examples."],
+    [/code|program|python|javascript|html|css|react|api|sql|node|function|debug|algorithm/, "What programming topic? I can explain concepts, provide code examples, help debug issues, or suggest best practices."],
+    [/philosophy|ethics|moral|plato|aristotle|socrates|kant|nietzsche|existential|logic/, "What philosophical topic or thinker? I can break down key ideas, arguments, and how they connect to modern thought."],
+    [/psychology|brain|memory|behavior|mental health|anxiety|depression|freud|cognitive|personality/, "What psychology topic? I can explain theories, research findings, and practical applications in clear terms."],
+    [/economics|economy|supply|demand|inflation|gdp|market|stock|trade|fiscal|monetary/, "What economics concept? I can explain supply and demand, inflation, market structures, and economic policy with real-world examples."],
+    [/geography|country|capital|continent|map|climate|region|population|border/, "What geography topic? I can cover physical features, climate patterns, population, culture, or specific regions of the world."]
+  ];
+  for (const [re, ans] of subs) { if (re.test(t)) return ans; }
+
+  return `That's an interesting question! I'm here to help with a wide range of topics — science, history, math, writing, coding, philosophy, psychology, economics, geography, and more.
+
+Try asking something like "What is [topic]?" or "Explain [concept]" and I'll give you my best answer with clear explanations and examples.`;
+}
+
+// ── THEME ──
+function toggleTheme() {
+  isDark = !isDark;
+  document.documentElement.classList.toggle('dark', isDark);
+  save();
+}
+
+function clearAll() {
+  if (!confirm('Delete all conversations?')) return;
+  localStorage.removeItem('forge-v3');
+  conversations = []; messages = {}; currentId = null;
+  newChat(); toast('All chats cleared');
+}
+
+init();
+</script>
+</body>
+</html>
